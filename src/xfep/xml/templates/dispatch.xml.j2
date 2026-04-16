@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DespatchAdvice xmlns="urn:oasis:names:specification:ubl:schema:xsd:DespatchAdvice-2"
+                xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+                xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
+                xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+                xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2">
+    <ext:UBLExtensions>
+        <ext:UBLExtension>
+            <ext:ExtensionContent/>
+        </ext:UBLExtension>
+    </ext:UBLExtensions>
+    <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
+    <cbc:CustomizationID>2.0</cbc:CustomizationID>
+    <cbc:ID>{{ doc.serie }}-{{ correlativo }}</cbc:ID>
+    <cbc:IssueDate>{{ doc.fecha_emision | fmt_date }}</cbc:IssueDate>
+    <cbc:DespatchAdviceTypeCode>09</cbc:DespatchAdviceTypeCode>
+    {% if doc.observaciones %}
+    <cbc:Note><![CDATA[{{ doc.observaciones }}]]></cbc:Note>
+    {% endif %}
+    <cac:Signature>
+        <cbc:ID>{{ company.ruc }}</cbc:ID>
+        <cac:SignatoryParty>
+            <cac:PartyIdentification>
+                <cbc:ID>{{ company.ruc }}</cbc:ID>
+            </cac:PartyIdentification>
+            <cac:PartyName>
+                <cbc:Name><![CDATA[{{ company.razon_social }}]]></cbc:Name>
+            </cac:PartyName>
+        </cac:SignatoryParty>
+        <cac:DigitalSignatureAttachment>
+            <cac:ExternalReference>
+                <cbc:URI>#SignST</cbc:URI>
+            </cac:ExternalReference>
+        </cac:DigitalSignatureAttachment>
+    </cac:Signature>
+    <cac:DespatchSupplierParty>
+        <cac:Party>
+            <cac:PartyIdentification>
+                <cbc:ID schemeID="6">{{ company.ruc }}</cbc:ID>
+            </cac:PartyIdentification>
+            <cac:PartyLegalEntity>
+                <cbc:RegistrationName><![CDATA[{{ company.razon_social }}]]></cbc:RegistrationName>
+            </cac:PartyLegalEntity>
+        </cac:Party>
+    </cac:DespatchSupplierParty>
+    <cac:DeliveryCustomerParty>
+        <cac:Party>
+            <cac:PartyIdentification>
+                <cbc:ID schemeID="{{ doc.destinatario.tipo_documento.value }}">{{ doc.destinatario.numero_documento }}</cbc:ID>
+            </cac:PartyIdentification>
+            <cac:PartyLegalEntity>
+                <cbc:RegistrationName><![CDATA[{{ doc.destinatario.razon_social }}]]></cbc:RegistrationName>
+            </cac:PartyLegalEntity>
+        </cac:Party>
+    </cac:DeliveryCustomerParty>
+    <cac:Shipment>
+        <cbc:ID>1</cbc:ID>
+        <cbc:HandlingCode>{{ doc.motivo_traslado }}</cbc:HandlingCode>
+        <cbc:GrossWeightMeasure unitCode="{{ doc.unidad_peso.value }}">{{ doc.peso_total | fmt_quantity }}</cbc:GrossWeightMeasure>
+        <cac:ShipmentStage>
+            <cbc:TransportModeCode>{{ doc.modalidad_transporte }}</cbc:TransportModeCode>
+            {% if doc.conductor %}
+            <cac:TransportMeans>
+                <cac:RoadTransport>
+                    {% if doc.vehiculo %}
+                    <cbc:LicensePlateID>{{ doc.vehiculo.placa }}</cbc:LicensePlateID>
+                    {% endif %}
+                </cac:RoadTransport>
+            </cac:TransportMeans>
+            <cac:DriverPerson>
+                <cbc:ID schemeID="{{ doc.conductor.tipo_documento }}">{{ doc.conductor.numero_documento }}</cbc:ID>
+                <cbc:FirstName>{{ doc.conductor.nombres }}</cbc:FirstName>
+                <cbc:FamilyName>{{ doc.conductor.apellidos }}</cbc:FamilyName>
+                {% if doc.conductor.licencia %}
+                <cac:IdentityDocumentReference>
+                    <cbc:ID>{{ doc.conductor.licencia }}</cbc:ID>
+                </cac:IdentityDocumentReference>
+                {% endif %}
+            </cac:DriverPerson>
+            {% endif %}
+        </cac:ShipmentStage>
+        <cac:Delivery>
+            <cac:DeliveryAddress>
+                <cbc:ID>{{ doc.punto_llegada.ubigeo }}</cbc:ID>
+                <cac:AddressLine>
+                    <cbc:Line><![CDATA[{{ doc.punto_llegada.direccion }}]]></cbc:Line>
+                </cac:AddressLine>
+            </cac:DeliveryAddress>
+        </cac:Delivery>
+        {% if doc.transportista %}
+        <cac:TransportHandlingUnit>
+            {% if doc.vehiculo %}
+            <cac:TransportEquipment>
+                <cbc:ID>{{ doc.vehiculo.placa }}</cbc:ID>
+            </cac:TransportEquipment>
+            {% endif %}
+        </cac:TransportHandlingUnit>
+        {% endif %}
+        <cac:OriginAddress>
+            <cbc:ID>{{ doc.punto_partida.ubigeo }}</cbc:ID>
+            <cac:AddressLine>
+                <cbc:Line><![CDATA[{{ doc.punto_partida.direccion }}]]></cbc:Line>
+            </cac:AddressLine>
+        </cac:OriginAddress>
+    </cac:Shipment>
+    {% for det in doc.detalles %}
+    <cac:DespatchLine>
+        <cbc:ID>{{ loop.index }}</cbc:ID>
+        <cbc:DeliveredQuantity unitCode="{{ det.unidad.value }}">{{ det.cantidad | fmt_quantity }}</cbc:DeliveredQuantity>
+        <cac:OrderLineReference>
+            <cbc:LineID>{{ loop.index }}</cbc:LineID>
+        </cac:OrderLineReference>
+        <cac:Item>
+            <cbc:Description><![CDATA[{{ det.descripcion }}]]></cbc:Description>
+            {% if det.codigo %}
+            <cac:SellersItemIdentification>
+                <cbc:ID>{{ det.codigo }}</cbc:ID>
+            </cac:SellersItemIdentification>
+            {% endif %}
+        </cac:Item>
+    </cac:DespatchLine>
+    {% endfor %}
+</DespatchAdvice>

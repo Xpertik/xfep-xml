@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DebitNote xmlns="urn:oasis:names:specification:ubl:schema:xsd:DebitNote-2"
+           xmlns:cac="urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2"
+           xmlns:cbc="urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2"
+           xmlns:ccts="urn:un:unece:uncefact:documentation:2"
+           xmlns:ds="http://www.w3.org/2000/09/xmldsig#"
+           xmlns:ext="urn:oasis:names:specification:ubl:schema:xsd:CommonExtensionComponents-2"
+           xmlns:qdt="urn:oasis:names:specification:ubl:schema:xsd:QualifiedDatatypes-2"
+           xmlns:sac="urn:sunat:names:specification:ubl:peru:schema:xsd:SunatAggregateComponents-1"
+           xmlns:udt="urn:un:unece:uncefact:data:specification:UnqualifiedDataTypesSchemaModule:2">
+    <ext:UBLExtensions>
+        <ext:UBLExtension>
+            <ext:ExtensionContent/>
+        </ext:UBLExtension>
+    </ext:UBLExtensions>
+    <cbc:UBLVersionID>2.1</cbc:UBLVersionID>
+    <cbc:CustomizationID>2.0</cbc:CustomizationID>
+    <cbc:ID>{{ doc.serie }}-{{ correlativo }}</cbc:ID>
+    <cbc:IssueDate>{{ doc.fecha_emision | fmt_date }}</cbc:IssueDate>
+    <cbc:DocumentCurrencyCode>{{ doc.moneda.value }}</cbc:DocumentCurrencyCode>
+    {% if doc.observaciones %}
+    <cbc:Note><![CDATA[{{ doc.observaciones }}]]></cbc:Note>
+    {% endif %}
+    <cac:DiscrepancyResponse>
+        <cbc:ReferenceID>{{ doc.num_doc_afectado }}</cbc:ReferenceID>
+        <cbc:ResponseCode>{{ doc.cod_motivo.value }}</cbc:ResponseCode>
+        <cbc:Description><![CDATA[{{ doc.des_motivo }}]]></cbc:Description>
+    </cac:DiscrepancyResponse>
+    <cac:BillingReference>
+        <cac:InvoiceDocumentReference>
+            <cbc:ID>{{ doc.num_doc_afectado }}</cbc:ID>
+            <cbc:DocumentTypeCode>{{ doc.tipo_doc_afectado.value }}</cbc:DocumentTypeCode>
+        </cac:InvoiceDocumentReference>
+    </cac:BillingReference>
+    <cac:Signature>
+        <cbc:ID>{{ company.ruc }}</cbc:ID>
+        <cac:SignatoryParty>
+            <cac:PartyIdentification>
+                <cbc:ID>{{ company.ruc }}</cbc:ID>
+            </cac:PartyIdentification>
+            <cac:PartyName>
+                <cbc:Name><![CDATA[{{ company.razon_social }}]]></cbc:Name>
+            </cac:PartyName>
+        </cac:SignatoryParty>
+        <cac:DigitalSignatureAttachment>
+            <cac:ExternalReference>
+                <cbc:URI>#SignST</cbc:URI>
+            </cac:ExternalReference>
+        </cac:DigitalSignatureAttachment>
+    </cac:Signature>
+    <cac:AccountingSupplierParty>
+        <cac:Party>
+            <cac:PartyIdentification>
+                <cbc:ID schemeID="6">{{ company.ruc }}</cbc:ID>
+            </cac:PartyIdentification>
+            <cac:PartyName>
+                <cbc:Name><![CDATA[{{ company.nombre_comercial or company.razon_social }}]]></cbc:Name>
+            </cac:PartyName>
+            <cac:PartyLegalEntity>
+                <cbc:RegistrationName><![CDATA[{{ company.razon_social }}]]></cbc:RegistrationName>
+            </cac:PartyLegalEntity>
+        </cac:Party>
+    </cac:AccountingSupplierParty>
+    <cac:AccountingCustomerParty>
+        <cac:Party>
+            <cac:PartyIdentification>
+                <cbc:ID schemeID="{{ doc.client.tipo_documento.value }}">{{ doc.client.numero_documento }}</cbc:ID>
+            </cac:PartyIdentification>
+            <cac:PartyLegalEntity>
+                <cbc:RegistrationName><![CDATA[{{ doc.client.razon_social }}]]></cbc:RegistrationName>
+            </cac:PartyLegalEntity>
+        </cac:Party>
+    </cac:AccountingCustomerParty>
+    {% if tax_subtotals %}
+    <cac:TaxTotal>
+        <cbc:TaxAmount currencyID="{{ doc.moneda.value }}">{{ total_impuestos | fmt_amount }}</cbc:TaxAmount>
+        {% for tax in tax_subtotals %}
+        <cac:TaxSubtotal>
+            <cbc:TaxableAmount currencyID="{{ doc.moneda.value }}">{{ tax.base | fmt_amount }}</cbc:TaxableAmount>
+            <cbc:TaxAmount currencyID="{{ doc.moneda.value }}">{{ tax.amount | fmt_amount }}</cbc:TaxAmount>
+            <cac:TaxCategory>
+                <cbc:ID schemeID="UN/ECE 5305" schemeName="Tax Category Identifier" schemeAgencyName="United Nations Economic Commission for Europe">{{ tax.category_id }}</cbc:ID>
+                <cac:TaxScheme>
+                    <cbc:ID>{{ tax.scheme_id }}</cbc:ID>
+                    <cbc:Name>{{ tax.scheme_name }}</cbc:Name>
+                    <cbc:TaxTypeCode>{{ tax.scheme_code }}</cbc:TaxTypeCode>
+                </cac:TaxScheme>
+            </cac:TaxCategory>
+        </cac:TaxSubtotal>
+        {% endfor %}
+    </cac:TaxTotal>
+    {% endif %}
+    <cac:RequestedMonetaryTotal>
+        <cbc:LineExtensionAmount currencyID="{{ doc.moneda.value }}">{{ total_gravada | fmt_amount }}</cbc:LineExtensionAmount>
+        <cbc:TaxInclusiveAmount currencyID="{{ doc.moneda.value }}">{{ mto_imp_venta | fmt_amount }}</cbc:TaxInclusiveAmount>
+        <cbc:PayableAmount currencyID="{{ doc.moneda.value }}">{{ mto_imp_venta | fmt_amount }}</cbc:PayableAmount>
+    </cac:RequestedMonetaryTotal>
+    {% for det in doc.detalles %}
+    <cac:DebitNoteLine>
+        <cbc:ID>{{ loop.index }}</cbc:ID>
+        <cbc:DebitedQuantity unitCode="{{ det.unidad.value }}">{{ det.cantidad | fmt_quantity }}</cbc:DebitedQuantity>
+        <cbc:LineExtensionAmount currencyID="{{ doc.moneda.value }}">{{ line_amounts[loop.index0].line_extension | fmt_amount }}</cbc:LineExtensionAmount>
+        <cac:PricingReference>
+            <cac:AlternativeConditionPrice>
+                <cbc:PriceAmount currencyID="{{ doc.moneda.value }}">{{ line_amounts[loop.index0].precio_unitario | fmt_amount }}</cbc:PriceAmount>
+                <cbc:PriceTypeCode>{{ line_amounts[loop.index0].price_type }}</cbc:PriceTypeCode>
+            </cac:AlternativeConditionPrice>
+        </cac:PricingReference>
+        <cac:TaxTotal>
+            <cbc:TaxAmount currencyID="{{ doc.moneda.value }}">{{ line_amounts[loop.index0].igv | fmt_amount }}</cbc:TaxAmount>
+            <cac:TaxSubtotal>
+                <cbc:TaxableAmount currencyID="{{ doc.moneda.value }}">{{ line_amounts[loop.index0].line_extension | fmt_amount }}</cbc:TaxableAmount>
+                <cbc:TaxAmount currencyID="{{ doc.moneda.value }}">{{ line_amounts[loop.index0].igv | fmt_amount }}</cbc:TaxAmount>
+                <cac:TaxCategory>
+                    <cbc:ID schemeID="UN/ECE 5305" schemeName="Tax Category Identifier" schemeAgencyName="United Nations Economic Commission for Europe">{{ line_amounts[loop.index0].tax_category_id }}</cbc:ID>
+                    <cbc:Percent>{{ line_amounts[loop.index0].percent | fmt_amount }}</cbc:Percent>
+                    <cbc:TaxExemptionReasonCode>{{ det.tip_afe_igv.value }}</cbc:TaxExemptionReasonCode>
+                    <cac:TaxScheme>
+                        <cbc:ID>{{ line_amounts[loop.index0].tax_scheme_id }}</cbc:ID>
+                        <cbc:Name>{{ line_amounts[loop.index0].tax_scheme_name }}</cbc:Name>
+                        <cbc:TaxTypeCode>{{ line_amounts[loop.index0].tax_scheme_code }}</cbc:TaxTypeCode>
+                    </cac:TaxScheme>
+                </cac:TaxCategory>
+            </cac:TaxSubtotal>
+        </cac:TaxTotal>
+        <cac:Item>
+            <cbc:Description><![CDATA[{{ det.descripcion }}]]></cbc:Description>
+            {% if det.codigo %}
+            <cac:SellersItemIdentification>
+                <cbc:ID>{{ det.codigo }}</cbc:ID>
+            </cac:SellersItemIdentification>
+            {% endif %}
+        </cac:Item>
+        <cac:Price>
+            <cbc:PriceAmount currencyID="{{ doc.moneda.value }}">{{ line_amounts[loop.index0].valor_unitario | fmt_amount }}</cbc:PriceAmount>
+        </cac:Price>
+    </cac:DebitNoteLine>
+    {% endfor %}
+</DebitNote>

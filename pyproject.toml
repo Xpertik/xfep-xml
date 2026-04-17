@@ -6,6 +6,29 @@ build-backend = "hatchling.build"
 name = "xfep-xml"
 version = "0.1.0"
 description = "Generación de XML UBL 2.1 para Facturación Electrónica Perú"
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [
+    {name = "Jhonatan Mosquera Tabra", email = "jhonatanmt83@gmail.com"},
+]
+maintainers = [
+    {name = "Jhonatan Mosquera Tabra", email = "jhonatanmt83@gmail.com"},
+]
+keywords = ["sunat", "facturacion-electronica", "peru", "ubl", "xml", "jinja2", "lxml", "cpe", "e-invoicing"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Topic :: Office/Business :: Financial :: Accounting",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Topic :: Text Processing :: Markup :: XML",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Natural Language :: Spanish",
+    "Operating System :: OS Independent",
+]
 requires-python = ">=3.13"
 dependencies = [
     "lxml>=5.0",
@@ -16,8 +39,17 @@ dependencies = [
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]
 
+[project.urls]
+Homepage = "https://github.com/Xpertik/xfep-xml"
+Repository = "https://github.com/Xpertik/xfep-xml"
+Issues = "https://github.com/Xpertik/xfep-xml/issues"
+Documentation = "https://github.com/Xpertik/xfep-xml#readme"
+
 [tool.hatch.build.targets.wheel]
 packages = ["src/xfep"]
+
+[tool.uv.sources]
+xfep-models = { path = "../xfep-models", editable = true }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
